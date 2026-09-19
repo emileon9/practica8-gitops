@@ -8,14 +8,15 @@ para los pasos manuales de creación en GitHub).
 
 ## Por qué este repo existe y qué NO contiene
 
-Este repositorio es deliberadamente pequeño: contiene **solo** el tag de
-imagen de cada componente, por ambiente. Todo lo demás (charts de Helm,
-templates, recursos, probes, políticas) vive en el repositorio de código
-(`P8/helm/*`), y las Applications de ArgoCD combinan ambas fuentes (ver
-`P8/argocd/applications/*.yaml`, campo `sources`).
+Este repositorio es deliberadamente pequeño: describe **qué está
+desplegado**, no cómo se construye. Eso significa dos cosas: el tag de
+imagen de cada componente por ambiente, y los secretos sellados. Todo lo
+demás (charts de Helm, templates, recursos, probes, políticas) vive en el
+repositorio de código (`P8/helm/*`), y las Applications de ArgoCD combinan
+ambas fuentes (ver `P8/argocd/applications/*.yaml`, campo `sources`).
 
 ```
-apps/
+apps/                        tag de imagen por servicio y ambiente
 ├── gateway/
 │   ├── values-dev.yaml     { image: { tag: "" } }
 │   └── values-prod.yaml
@@ -25,7 +26,24 @@ apps/
 ├── ms-notifications/
 ├── cronjob-heartbeat/
 └── cronjob-summary/
+
+secrets/                     credenciales selladas (ciphertext)
+├── sealedsecret-db-credentials.yaml
+└── sealedsecret-broker-credentials.yaml
 ```
+
+### Por qué los secretos viven aquí y no en el chart
+
+Un `SealedSecret` es ciphertext asimétrico: solo el controller que corre en
+el clúster de destino puede descifrarlo, con una llave privada que nunca
+sale de ahí. Por eso es seguro versionarlo en un repositorio público — y
+por eso su lugar correcto es este repositorio, que representa el estado
+desplegado, y no el chart de Helm, que describe la forma de la aplicación
+independientemente del entorno.
+
+Nunca debe aparecer aquí una contraseña en claro. Las que están selladas se
+generaron aleatoriamente y se aplicaron al servicio correspondiente en el
+mismo paso en que se sellaron.
 
 ## Cómo se actualiza
 
